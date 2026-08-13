@@ -616,3 +616,218 @@ ELSE to_char(e.mgr)
 END AS CHG_MGR
 FROM EMP e 
 ORDER BY e.MGR ;
+
+
+
+
+-- 집합과 결합
+
+-- 다중행 함수
+-- sum(), avg(), count(), max(), min()
+
+-- 추가 수당 총계
+SELECT sum(e.COMM)
+FROM EMP e ;
+
+-- 급여 총계
+SELECT sum(sal), sum(DISTINCT sal), sum(ALL sal)
+FROM emp;
+
+-- 개수
+SELECT count(e.comm), count(*)
+FROM emp e;
+
+-- 최대값, 최소값
+SELECT max(e.sal), min(e.sal)
+FROM emp e;
+
+-- 10번 부서의 최고 급여
+SELECT e.DEPTNO , max(e.sal), min(e.sal)
+FROM EMP e 
+WHERE e.DEPTNO =10
+GROUP BY e.DEPTNO ;
+
+SELECT max(e.HIREDATE ), min(e.HIREDATE )
+FROM EMP e ;
+
+
+-- 평균
+SELECT round(avg(sal),2)
+FROM emp e;
+
+-- 결과값을 원하는 열로 묶어 출력 : group by
+
+SELECT COUNT(*) AS 총사원수, SUM(sal) 급여합계, ROUND(AVG(sal),2) AS 평균급여, max(sal) AS 최고급여, min(sal) AS 최저급여
+FROM emp;
+
+
+SELECT e.DEPTNO, count(*) AS 인원수, SUM(e.SAL) 급여합계, round(AVG(sal),2) 평균급여
+FROM EMP e 
+GROUP BY e.DEPTNO 
+ORDER BY e.DEPTNO ;
+
+
+SELECT e.DEPTNO , e.JOB , count(*) AS 인원수, sum(sal) AS 급여합계
+FROM EMP e 
+GROUP BY e.DEPTNO , e.JOB 
+ORDER BY e.DEPTNO , e.JOB ;
+
+-- group by ~ having
+SELECT deptno, round(avg(sal),2) AS 평균급여
+FROM emp
+GROUP BY DEPTNO 
+HAVING avg(sal) >=2000
+ORDER BY DEPTNO;
+
+
+SELECT e.DEPTNO , e.JOB , count(*) AS 인원수, sum(sal) AS 급여합계
+FROM EMP e
+WHERE job <> 'CLERK'
+GROUP BY e.DEPTNO , e.JOB 
+HAVING count(*) >=2
+ORDER BY e.DEPTNO 
+
+SELECT e.DEPTNO , round(avg(e.sal),2) AS 평균급여
+FROM EMP e 
+GROUP BY e.DEPTNO 
+ORDER BY 평균급여 DESC;
+
+
+-- 급여가 3000 이하인 직원들의 부서별, 직무별 평균 구하기 (단, 급여 평균이 2000 이상인 평균그룹만 출력)
+SELECT e.DEPTNO ,e.job, round(avg(e.sal),2) AS 평균급여
+FROM EMP e 
+WHERE e.SAL <=3000
+GROUP BY e.DEPTNO , e.JOB 
+
+
+-- 같은 직책에 종사하는 사원이 3명 이상인 직책과 인원수 출력
+-- MANAGER 
+SELECT e.job, count(*)
+FROM emp e
+group BY e.JOB 
+HAVING count(e.job)>=3;
+
+
+-- 연도를 기준으로 부서별로 몇명이 입사했는지 출력
+SELECT TO_CHAR(e.HIREDATE,'yyyy') AS 연도, e.deptno, (count(*))
+FROM emp e
+GROUP BY e.DEPTNO , to_char(e.HIREDATE, 'yyyy') 
+ORDER BY to_char(e.HIREDATE,'yyyy')  ;
+
+-- 데이터베이스 설계
+-- 데이터를 효율적으로 저장하고 관리하기 위해서 테이블 구조를 미리 정하는 것
+
+-- 조인: 여러 테이블을 하나의 테이블처럼 사용
+-- 1. 내부조인(INNER JOIN)
+-- 2. 외부조인(OUTER JOIN)
+-- LEFT OUTER JOIN
+-- RIGHT OUTER JOIN
+-- FULL OUTER JOIN
+
+
+SELECT *
+FROM emp e, DEPT d 
+WHERE e.DEPTNO = d.DEPTNO 
+ORDER BY e.EMPNO ;
+
+-- (INNER) JOIN~ON
+SELECT e.EMPNO , e.ENAME , e.DEPTNO , d.DNAME , d.LOC 
+FROM EMP e 
+JOIN DEPT d ON e.DEPTNO =d.DEPTNO 
+ORDER BY e.EMPNO ;
+
+
+SELECT *
+FROM EMP e, SALGRADE s 
+WHERE e.sal BETWEEN  s.LOSAL  AND s.HISAL 
+ORDER BY e.EMPNO ;
+
+SELECT e.EMPNO , e.ENAME , e.SAL , s.GRADE 
+FROM emp e
+JOIN SALGRADE s 
+ON e.SAL BETWEEN s.LOSAL AND s.HISAL 
+ORDER BY e.EMPNO 
+
+
+-- self join
+-- 자체 조인
+
+SELECT e.EMPNO , e.ENAME ,e.MGR , e2.ENAME 
+FROM emp e, emp e2
+WHERE e.MGR = e2.EMPNO 
+ORDER BY e.EMPNO ;
+
+SELECT *
+FROM emp e
+JOIN emp e2
+ON e.MGR = e2.EMPNO 
+ORDER BY e.EMPNO ;
+
+
+-- 외부조인 : 일치하지 않는 정보 가져오기 (왼쪽테이블, 오른쪽 테이블 기준에 따라 )
+-- LEFT OUTER JOIN
+SELECT e.EMPNO , e.ENAME ,e.MGR , e2.ENAME 
+FROM emp e, emp e2
+WHERE e.MGR = e2.EMPNO (+)
+ORDER BY e.EMPNO ;
+
+
+-- RIGHT OUTER JOIN
+SELECT e.EMPNO , e.ENAME ,e.MGR , e2.ENAME 
+FROM emp e, emp e2
+WHERE e.MGR(+) = e2.EMPNO
+ORDER BY e.EMPNO ;
+
+
+SELECT e.EMPNO , e.ENAME ,e.MGR , e2.ENAME 
+FROM emp e
+FULL JOIN emp e2
+ON e.MGR = e2.EMPNO 
+ORDER BY e.EMPNO ;
+
+
+-- 사원, 부서 정보 출력 (단, 급여가 2000초과인 사원만)
+SELECT e.empno, e.ENAME , e.DEPTNO , d.DNAME , d.LOC 
+FROM emp e
+JOIN dept d
+ON e.DEPTNO =d.DEPTNO 
+WHERE e.SAL >2000
+ORDER BY 
+e.EMPNO 
+
+
+SELECT e.ENAME , e.JOB , e.DEPTNO, d.DEPTNO , d.DNAME , d.LOC  
+FROM emp e
+JOIN DEPT d ON e.DEPTNO =d.DEPTNO ;
+
+
+-- 서브쿼리
+SELECT e.ename, e.job, e.sal
+FROM emp e
+WHERE e.sal > (SELECT e.sal FROM emp e WHERE e.ENAME ='SCOTT');
+
+
+-- 왼쪽 메인쿼리 오른쪽(서브쿼리)
+
+-- 단일행 서브 쿼리
+-- =, >=, <, <=, <>, ^=, !=
+
+-- jones의 급여보다 높은 급여를 받는 사원 조회
+SELECT e.ENAME ,e.sal,e.JOB 
+FROM emp e
+WHERE e.sal > (SELECT e2.sal FROM emp e2 WHERE e2.ENAME ='JONES');
+
+-- WARD의 입사일보다 빨리 입사한 사원 조회
+SELECT e.ENAME , e.sal, e.HIREDATE 
+FROM EMP e 
+WHERE e.HIREDATE < (SELECT e2.hiredate FROM EMP e2 WHERE e2.ENAME ='WARD');
+
+-- 20번 부서에 속한 사원 중 전체 사원의 평균급여보다 높은 급여를 받는 사원 조회
+-- 부서명 위치도 같이 조회
+SELECT e.ENAME , e.sal, e.DEPTNO, d.DNAME , d.LOC
+FROM EMP e 
+JOIN DEPT d 
+ON e.DEPTNO = d.DEPTNO 
+WHERE e.DEPTNO =20 and e.sal > (SELECT avg(e2.sal) FROM emp e2);
+
+
