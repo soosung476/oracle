@@ -806,6 +806,7 @@ SELECT e.ename, e.job, e.sal
 FROM emp e
 WHERE e.sal > (SELECT e.sal FROM emp e WHERE e.ENAME ='SCOTT');
 
+-- 서브쿼리는 where, from, select 안에 넣을 수 있음.
 
 -- 왼쪽 메인쿼리 오른쪽(서브쿼리)
 
@@ -830,4 +831,368 @@ JOIN DEPT d
 ON e.DEPTNO = d.DEPTNO 
 WHERE e.DEPTNO =20 and e.sal > (SELECT avg(e2.sal) FROM emp e2);
 
+-- 다중행 서브쿼리
+-- IN, ANY(some), ALL, EXISTS
+SELECT * FROM emp e WHERE e.sal IN (SELECT max(e2.sal) FROM emp e2 GROUP BY e2.DEPTNO );
 
+
+-- any(some) : 메인쿼리의 조건식을 만족하는 서브쿼리의 결과가 하나 이상이면 true 반환
+-- =any 는 in과 같은 역할
+-- <any 는 select문에 max가 있는 단일서브쿼리랑 같은 역할.
+SELECT * FROM emp e WHERE e.sal = ANY (SELECT max(e2.sal) FROM emp e2 GROUP BY e2.DEPTNO );
+
+
+SELECT * FROM emp e WHERE e.sal < ANY (SELECT e2.sal FROM emp e2 where e2.DEPTNO=30 ) ORDER BY e.sal, e.EMPNO ;
+
+
+-- all: 서브쿼리의 모든 결과가 조건식에 맞아 떨어져야만 메인 쿼리의 조건식이 true가 됨.
+
+SELECT * FROM emp e WHERE e.sal < ALL (SELECT e2.sal FROM emp e2 where e2.DEPTNO=30 ) ORDER BY e.sal, e.EMPNO ;
+
+
+-- exists : 서브쿼리의 결과값이 하나 있으면 조건식이 모두 true 없으면 false
+
+ SELECT * FROM emp e WHERE  Exists (SELECT d.DNAME  FROM DEPT d  where d.DEPTNO=10 );
+
+ 
+ -- 전체 사원 중 ALLEN과 같은 직책의 사원들의 사원정보, 부서정보 조회(사번, 이름, 직무 부서명, 출력)
+SELECT e.EMPNO , e.ENAME ,e.JOB ,d.DNAME 
+FROM EMP e 
+JOIN DEPT d 
+ON e.DEPTNO = d.DEPTNO 
+WHERE e.job IN (SELECT e2.job FROM EMP e2 WHERE e2.ENAME ='ALLEN');
+ 
+ -- 10번 부서에 근무하는 사원 중 30번 부서에 없는 직책을 가진 사원의 사번, 이름, 직무, 부서번호, 부서위치 조회.
+SELECT e.EMPNO ,e.ENAME ,e.JOB ,e.DEPTNO , d.LOC 
+FROM EMP e 
+JOIN DEPT d 
+ON e.DEPTNO =d.DEPTNO 
+WHERE e.DEPTNO =10 AND e.job NOT IN (SELECT e2.job FROM EMP e2 WHERE e2.DEPTNO =30);
+
+-- 비교할 열이 여러개인 개인 다중열 서브쿼리
+SELECT *
+FROM emp e
+WHERE (e.DEPTNO ,e.SAL ) IN (SELECT e2.DEPTNO , max(e2.SAL ) FROM emp e2 GROUP BY e2.DEPTNO);
+
+-- from 절에 사용하는 서브쿼리(인라인 뷰)
+
+SELECT e10.*, d.*
+FROM (SELECT * FROM EMP e WHERE e.DEPTNO =10) E10, (SELECT* FROM DEPT d ) D
+WHERE E10.DEPTNO  = d.DEPTNO 
+
+
+-- select 절 서브쿼리(스칼라 서브쿼리)
+
+SELECT
+	e.EMPNO ,
+	e.ENAME ,
+	e.SAL ,
+	(
+	SELECT
+		s.GRADE
+	FROM
+		SALGRADE s
+	WHERE
+		e.sal BETWEEN s.losal AND s.HISAL) AS salgrade,
+ 	(SELECT d.dname FROM DEPT d WHERE e.DEPTNO =d.DEPTNO ) AS dname
+FROM EMP e;
+
+-- 데이터 조작어(DML) : 추가, 수정, 삭제
+-- 1) 추가 : insert
+
+--INSERT INTO 테이블명 (컬럼1, 컬럼2, ...)
+--values(값1, 값2, ...)
+
+
+
+-- 연습용 테이블 생성
+-- dept 테이블 복제
+
+CREATE TABLE dept_tmp AS SELECT * FROM dept;
+
+-- emp 테이블의 구조만 복제
+CREATE TABLE emp_tmp AS SELECT * FROM emp WHERE 1<>1;
+
+SELECT * FROM dept_tmp dt;
+
+SELECT * FROM EMP_TMP et ;
+
+-- dept_tmp 테이블에 50번 부서 추가
+INSERT INTO DEPT_TMP(deptno, dname, loc)
+values(50, 'DATABASE', 'SEOUL');
+
+-- 컬럼명을 생략하는 경우는 컬럼수에 맞춰서 겂이 들어오는 경우
+INSERT INTO DEPT_TMP
+values(60, 'NETWORK', null);
+
+-- null 삽입이 가능한 컬럼의 값은 NULL 명시
+INSERT INTO DEPT_TMP(deptno, dname, loc)
+values(70, 'WEB', null);
+
+
+-- null 암시적 처리
+INSERT INTO DEPT_TMP(deptno, dname)
+values(70, 'OS');
+
+
+-- 날짜 데이터 삽입
+-- -,/
+
+INSERT INTO EMP_TMP(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (1111,'성춘향','MANAGER',9999,to_date('2010/10/25','yyyy/mm/dd'),4000,NULL,20);
+
+INSERT INTO EMP_TMP(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (2222,'홍길동','MANAGER',9999,to_date('2010/10/25','yyyy/mm/dd'),4000,NULL,20);
+
+INSERT INTO EMP_TMP(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (3333,'김수호','MANAGER',1111,SYSDATE,4000,NULL,20);
+
+
+
+-- 서브쿼리를 이용한 INSERT
+-- EMP 테이블 데이터 => EMP_TMP
+INSERT INTO EMP_TMP(empno, ename, job, mgr, hiredate, sal, comm, deptno) 
+SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno
+FROM EMP e ;
+
+SELECT * FROM EMP_TMP et ;
+
+INSERT INTO EMP_TMP(empno, ename, job, mgr, hiredate, sal, comm, deptno) 
+SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno
+FROM EMP e JOIN salgrade s ON e.sal BETWEEN s.losal AND s.HISAL AND s.GRADE =1 ;
+
+-- 수정: update
+--UPDATE 테이블명
+--SET 컬럼1 = 값1, 컬럼2 = 값2, ...
+--[WHERE 조건;]
+
+SELECT * FROM DEPT_TMP dt ;
+-- dept_tm 10 부서의 장소 변경 
+UPDATE DEPT_TMP dt 
+SET dt.loc = 'TOKYO'
+WHERE dt.DEPTNO =10;
+
+
+SELECT * FROM EMP_TMP et 
+-- emp_tmp테이블의 사원 중에서 SAL이 2500 이하인 사원만 추가수당을 50으로 수정
+
+UPDATE EMP_TMP et 
+SET et.comm = 50
+WHERE et.SAL < 2500;
+
+
+-- dept 테이블이 40번 부서의 dname, loc를 가져와서 dept_tmp 50번 부서의 내용으로 변경
+UPDATE DEPT_TMP dt 
+SET (dt.dname, dt.loc) = (SELECT d.DNAME , d.LOC  FROM DEPT d WHERE d.DEPTNO =40) 
+WHERE dt.deptno = 50;
+
+
+-- 삭제: delete
+--DELETE [FROM] 테이블
+--WHERE 조건
+
+SELECT * FROM emp_tmp et;
+
+
+DELETE FROM emp_tmp WHERE EMPNO =1111;
+
+-- 데이터 전체 삭제
+DELETE FROM emp_tmp;
+
+
+
+-- emp, dept, salgrade 테이블 복사
+-- exam_emp, exam_dept, exam_salgrade
+CREATE TABLE exam_emp AS SELECT * FROM emp;
+
+CREATE TABLE exam_dept AS SELECT* FROM dept;
+
+CREATE TABLE exam_salgrade AS SELECT* FROM salgrade;
+
+
+-- 새로 생성된 테이블에 데이터 삽입
+-- exam_dept
+-- 50 , 'ORACLE', 'BUSAN'
+-- 60, 'SQL', 'ILSAN'
+-- 70, 'SELECT', 'INCHEON'
+-- 80, DML, BUNDANG
+SELECT * FROM exam_emp;
+SELECT *  FROM exam_dept;
+
+INSERT INTO exam_dept
+VALUES (50 , 'ORACLE', 'BUSAN');
+
+INSERT INTO exam_dept
+VALUES (60, 'SQL', 'ILSAN');
+
+INSERT INTO exam_dept
+VALUES (70, 'SELECT', 'INCHEON');
+
+INSERT INTO exam_dept
+VALUES (80, 'DML', 'BUNDANG');
+
+INSERT INTO exam_emp
+SELECT * FROM EMP ;
+-- exam_emp 테이블에 임의의 사원 정보 삽입
+-- 5명 정도 
+INSERT INTO exam_emp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (8000, 'SMITH', 'SCIENTIST', 7839, to_date('2000-04-22','yyyy-mm-dd'), 5300, NULL, 50);
+
+INSERT INTO exam_emp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (8001, 'LAYS', 'SCIENTIST', 8000, to_date('2001-08-22','yyyy-mm-dd'), 4400, NULL, 60);
+
+INSERT INTO exam_emp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (8002, 'DELIGHT', 'SCIENTIST', 8000, to_date('2001-09-15','yyyy-mm-dd'), 3900, NULL, 50);
+
+INSERT INTO exam_emp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (8003, 'FAKER', 'SCIENTIST', 8000, to_date('2001-12-04','yyyy-mm-dd'), 3800, NULL, 70);
+
+INSERT INTO exam_emp(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES (8004, 'SVEN', 'SCIENTIST', 8001, to_date('2002-06-07','yyyy-mm-dd'), 3100, NULL, 60);
+
+
+
+-- exam_emp 에 속한 사원들 중50번 부서에서 근무하는 사원의 평균 급여보다 많이 받는 사원을
+-- 70번 부서로 옮기는 sql 구문 작성
+
+
+
+UPDATE exam_emp e
+SET deptno = 70
+WHERE e.sal > (SELECT avg(e2.sal) FROM exam_emp e2 WHERE e2.deptno = 50);
+
+SELECT * FROM exam_emp;
+
+-- exam_emp에 속한 사원 중 입사일이 가장 빠른 60번 부서 사원보다 늦게 입사한 사원의 급여를
+-- 10% 인상하고 80번 부서로 옮기는 sql구문 작성
+
+UPDATE exam_emp e
+SET sal = sal*1.1, deptno = 80
+WHERE e.hiredate > (SELECT min(e2.hiredate) FROM exam_emp e2 WHERE e2.deptno=60)
+
+--exam_emp에 속한 사원 중 급여 등급이 5인 사원을 삭제하는 sql 구문 작성
+
+DELETE FROM exam_emp e 
+WHERE e.sal BETWEEN (SELECT losal FROM exam_salgrade WHERE grade = 5)
+AND (SELECT hisal FROM exam_salgrade WHERE grade = 5);
+
+
+
+-- 트랜잭션 : 더 이상 분할할 수 없는 최소 수행 단위
+-- C,U,D : INSERT, UPDATE, DELETE
+
+-- ROLLBACK : 트랜잭션 취소
+-- COMMIT: 트랜잭션 반영
+-- 
+
+CREATE TABLE DEPT_TCL AS SELECT * FROM DEPT;
+SELECT * FROM DEPT_TCL dt ;
+
+-- 트랜잭션 시작
+INSERT INTO DEPT_TCL values(50,'DATABASE','SEOUL');
+UPDATE DEPT_TCL dt SET loc = 'BUSAN' WHERE dt.DEPTNO =40;
+DELETE FROM DEPT_TCL WHERE DNAME ='RESEARCH';
+
+COMMIT;
+ROLLBACK;
+
+SELECT * FROM DEPT_TCL dt ;
+
+-- 세션 : 데이터베이스 접속을 시작으로 해서 관련 작업들을 수행한 후 접속을 종료하기까지의 전체 기간
+
+DELETE FROM DEPT_TCL 
+WHERE DEPTNO =50;
+COMMIT ;
+
+
+UPDATE DEPT_TCL dt 
+SET dt.loc = 'SEOUL'
+WHERE DT.DEPTNO =30;
+COMMIT ;
+
+-- DDL (데이터 정의어)
+-- 테이블 정의
+-- CREATE, ALTER, DROP, 
+
+
+--CREATE TABLE 테이블명 (
+--컬럼1 자료형 [제약조건],
+--컬럼2 자료형 [제약조건],
+--...
+--);
+
+-- 테이블명 (문자로 시작)
+-- SCOTT 안에서 동일한 테이블명은 존재 불가
+-- 예약어는 테이블 이름으로 사용 불가 (ex order)
+-- 컬럼명은 문자로 시작
+-- 하나의 테이블 안에서 컬럼명 중복 불가
+-- 자료형
+-- 숫자 number(6) <6자리정수>, number(7,2)<전체 7 자리 중 소수점 이하 2자리, 정수부5 소수부2>
+-- 문자 VARCHAR2(n) : 가변길이 문자열 ex)varchar2(20<byte>)
+-- CHAR(n): 고정길이 문자열 ex)char(20<byte>)
+-- nchar(n) : 고정길이 유니코드 문자열 - 한글 영어 상관없이 n개문자 가능
+-- nvarchar2(n) : 가변길이 유니코드 문자열
+-- 날짜: date, timestamp
+-- 대용량 데이터: CLOB: 대용량 문자 데이터
+-- NCLOB : 대용량 유니코드 문자 데이터
+-- BLOB : 대용량 바이너리 데이터
+
+
+CREATE TABLE EMP_DDL (
+	EMPNO NUMBER(4),
+	ENAME VARCHAR2(10),
+	JOB VARCHAR2(9),
+	MGR NUMBER(4),
+	HIREDATE DATE,
+	SAL NUMBER(7,2),
+	COMM  NUMBER (7,2),
+	DEPTNO NUMBER (2)
+);
+
+CREATE TABLE DEPT_DDL AS SELECT * FROM dept;
+
+
+-- 변경
+-- 컬럼추가
+-- ALTER TABLE 테이블명 ADD (컬럼명 자료형);
+
+ALTER TABLE EMP_DDL ADD HP VARCHAR2(20);
+
+SELECT * FROM EMP_DDL ed;
+
+-- 컬럼이름 변경
+-- ALTER TABLE 테이블명 RENAME COLUMN 기존이름 TO 새이름;
+
+ALTER TABLE EMP_DDL RENAME COLUMN HP TO TEL;
+
+SELECT * FROM EMP_DDL ed ;
+
+-- 컬럼 자료형 변경
+-- ALTER TABLE 테이블명 MODIFY (컬럼명 새자료형);
+
+ALTER TABLE EMP_DDL MODIFY EMPNO NUMBER(5);
+
+
+-- 컬럼 삭제
+-- ALTER TABLE 테이블명 DROP COLUMN 컬럼명;
+
+ALTER TABLE EMP_DDL DROP COLUMN tel;
+
+
+-- 테이블 이름 변경
+-- RENAME 원본테이블명 TO 변경테이블명;
+RENAME EMP_DDL TO EMP_RENAME;
+
+
+
+-- 테이블 삭제
+-- 휴지통으로 이동
+-- DROP TABLE 테이블명;
+
+DROP TABLE EMP_RENAME ;
+
+-- 휴지통 거치지 않고 완전 삭제
+-- DROP TALBE PURGE; 
+
+-- 휴지통에서 복구
+-- FLASHBACK TABLE 테이블명 TO BEFORE DROP;
