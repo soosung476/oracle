@@ -1196,3 +1196,360 @@ DROP TABLE EMP_RENAME ;
 
 -- 휴지통에서 복구
 -- FLASHBACK TABLE 테이블명 TO BEFORE DROP;
+
+
+-- 오라클 객체
+-- 데이터 사전
+-- user_xxx
+-- dba_xxx
+-- all_xxx
+-- v$_xxx
+
+
+-- scott 계정에서 사용할 수 있는 데이터 사전
+SELECT * FROM dict;
+
+SELECT table_name FROM user_tables;
+-- scott + 다른 사람이 볼 수 있도록 허용된 객체들
+SELECT owner,table_name FROM all_tables;
+SELECT table_name FROM dba_tables;
+
+
+-- 인덱스 : 데이터 검색 능력 향
+-- 데이터 검색 방법
+-- 테이블을 풀 스캔
+-- 인덱스 스캔
+
+SELECT * FROM user_indexes;
+
+-- 기본키이면 무조건 인덱스로 생성
+
+-- 인덱스 생성
+-- CREATE INDEX 인덱스이름 ON 테이블명(열이름<컬럼네임>)
+
+CREATE INDEX IDX_EMP ON EMP(SAL);
+DROP INDEX IDX_EMP;
+
+SELECT * FROM EMP WHERE EMPNO =7369;
+
+-- 뷰 : 가상테이블
+-- 편리성
+-- 보안성
+
+-- CREATE VIEW 뷰이름(열이름1,열이름2,...)
+-- AS (SELECT * FROM 테이블명) 
+
+
+-- 20번 부서의 직원 조회를 자주 하는 경우
+SELECT * FROM emp WHERE DEPTNO =20;
+
+CREATE VIEW VM_EMP20 AS (SELECT empno, ename, job, deptno FROM emp WHERE DEPTNO =20);
+
+SELECT * FROM VM_EMP20;
+
+
+UPDATE vm_EMP20 ve SET job = 'SALESMAN' WHERE ve.empno = 7566;
+
+INSERT INTO VM_EMP20(empno, ename, job, deptno)
+VALUES (7777,'홍길동','CLERK',20);
+
+DELETE FROM VM_EMP20 WHERE empno = 7777;
+
+DROP VIEW VM_EMP20 ;
+
+
+-- 읽기 전용 뷰 생성
+CREATE VIEW VM_EMP20 AS (SELECT empno, ename, job, deptno FROM emp WHERE DEPTNO =20) WITH READ ONLY;
+
+INSERT INTO VM_EMP20(empno, ename, job, deptno)
+VALUES (7777,'홍길동','CLERK',20);
+
+DROP VIEW VM_EMP20 ;
+
+
+-- 시퀀스(특정 규칙에 맞춰 연속 숫자를 생성하는 객체)
+
+CREATE SEQUENCE SEQ_DEPT_SEQUENCE;
+DROP SEQUENCE SEQ_DEPT_SEQUENCE;
+
+
+CREATE TABLE DEPT_SEQUENCE AS SELECT * FROM dept WHERE 1<>1;
+
+SELECT * FROM dept_sequence;
+-- DEPTNO에 1씩 증가하는 숫자를 삽입.
+INSERT INTO DEPT_SEQUENCE (deptno, dname, loc)
+VALUES(SEQ_DEPT_SEQUENCE.nextval, 'DATABASE', 'SEOUL');
+
+
+
+CREATE SEQUENCE SEQ_DEPT_SEQUENCE
+INCREMENT BY 10
+START WITH 10
+MAXVALUE 90
+MINVALUE 0
+NOCYCLE CACHE 2;
+
+INSERT INTO DEPT_SEQUENCE (deptno, dname, loc)
+VALUES(SEQ_DEPT_SEQUENCE.nextval, 'DATABASE', 'SEOUL');
+
+
+-- 현재 시퀀스 값 조회
+SELECT SEQ_DEPT_SEQUENCE.CURRVAL FROM dual;
+
+
+-- 제약조건
+-- 테이블에 저장할 데이터를 제약하는 특수한 규칙
+-- 1. NOT NULL
+-- 2. UNIQUE
+-- 3. PRIMARY KEY
+-- 4. FOREIGN KEY
+-- 5. CHECK
+-- 6. DEFAULT
+
+-- NOT NULL : 빈값을 허용하지 않음.
+
+CREATE TABLE TABLE_NOTNULL(
+	LOGIN_ID VARCHAR2(20) NOT NULL,
+	LOGIN_PWD VARCHAR2(20) NOT NULL,
+	TEL VARCHAR2(20)
+);
+
+INSERT INTO TABLE_NOTNULL (login_id, login_pwd, tel)
+VALUES ('test01','test01','010-1234-5678');
+
+INSERT INTO TABLE_NOTNULL (login_id, login_pwd, tel)
+VALUES ('test02','test02',null);
+
+UPDATE TABLE_NOTNULL tn  SET tel='010-4567-4586' WHERE tn.LOGIN_ID ='test02'
+
+
+SELECT * FROM TABLE_NOTNULL tn ;
+
+-- 제약조건 추가
+ALTER TABLE TABLE_NOTNULL MODIFY(tel NOT null);
+
+
+DROP TABLE TABLE_NOTNULL ;
+
+
+
+-- 제약 조건명 부여
+CREATE TABLE TABLE_NOTNULL(
+	LOGIN_ID VARCHAR2(20) CONSTRAINT TBLNN_LOGIN_NN NOT NULL,
+	LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLNN_PWD_NN NOT NULL,
+	TEL VARCHAR2(20)
+);
+
+
+
+ALTER TABLE TABLE_NOTNULL MODIFY(tel CONSTRAINT TBLNN_TEL_NN NOT null);
+
+
+-- 제약조건 삭제
+ALTER TABLE TABLE_NOTNULL  DROP CONSTRAINT TBLNN_PWD_NN;
+
+
+
+-- 2. UNIQUE: 지정한 열이 유일한 값을 가져야 함.
+
+CREATE TABLE TABLE_UNIQUE(
+	LOGIN_ID VARCHAR2(20) UNIQUE,
+	LOGIN_PWD VARCHAR2(20) NOT NULL,
+	TEL VARCHAR2(20)
+);
+
+
+INSERT INTO TABLE_UNIQUE (login_id, login_pwd, tel)
+VALUES ('test01','test01','010-1234-5678');
+
+-- UNIQUE는 NULL값 허용.
+-- null값은 중복의 의미 없음.
+INSERT INTO TABLE_UNIQUE (login_id, login_pwd, tel)
+VALUES (null,'test01','010-1234-5678');
+
+INSERT INTO TABLE_UNIQUE (login_id, login_pwd, tel)
+VALUES ('test02','test02','010-1234-5678');
+
+UPDATE TABLE_UNIQUE tu SET login_id = 'test01' WHERE tu.LOGIN_ID ='test02';
+
+
+SELECT * FROM TABLE_UNIQUE tu ;
+
+
+-- PRIMARY KEY(기본키)
+
+-- NOT NULL + UNIQUE
+
+
+
+
+
+CREATE TABLE TABLE_PK(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) NOT NULL,
+	TEL VARCHAR2(20)
+);
+
+
+
+INSERT INTO TABLE_PK (login_id, login_pwd, tel)
+VALUES ('test01','test01','010-1234-5678');
+
+
+-- 값이 하나만 나옴
+-- where pk = 1;
+
+
+-- FOREIGN KEY
+-- 다른 테이블의 열을 참조하여 존재하는 값만 삽입 가능
+
+-- EMP, DEPT
+
+
+CREATE TABLE DEPT_FK(
+	DEPTNO NUMBER(2) PRIMARY KEY,
+	DNAME VARCHAR(14),
+	LOC varchar(13)
+);
+
+
+
+
+CREATE TABLE EMP_FK (
+	EMPNO NUMBER(4) PRIMARY key,
+	ENAME VARCHAR2(10),
+	JOB VARCHAR2(9),
+	MGR NUMBER(4),
+	HIREDATE DATE,
+	SAL NUMBER(7,2),
+	COMM  NUMBER (7,2),
+	DEPTNO NUMBER (2) REFERENCES dept_FK(DEPTNO)
+);
+
+-- ORA-02291: integrity constraint (SCOTT.SYS_C009301) violated - parent key not found
+
+INSERT INTO DEPT_FK (deptno, dname, loc)
+VALUES(10,'DATABASE','SEOUL');
+
+INSERT INTO EMP_FK (empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES(7201, 'TEST1','MANAGER',7788,TO_DATE('2026-01-02','yyyy-mm-dd'), 4500, NULL, 10);
+
+-- SQL Error [2292] [23000]: ORA-02292: integrity constraint (SCOTT.SYS_C009301) violated - child record found
+DELETE FROM DEPT_FK WHERE DEPTNO =10;
+
+
+-- 삭제 시 자식 데이터 처리 방법 지정
+-- ON DELETE CASCADE  : 부모가 삭제되면 자식도 같이 삭제
+-- ON DELETE SET NULL : 부모가 삭제되면 영향을 받는 값은 NULL로 변경
+
+
+
+CREATE TABLE DEPT_FK(
+	DEPTNO NUMBER(2) PRIMARY KEY,
+	DNAME VARCHAR(14),
+	LOC varchar(13)
+);
+
+
+
+
+CREATE TABLE EMP_FK (
+	EMPNO NUMBER(4) PRIMARY key,
+	ENAME VARCHAR2(10),
+	JOB VARCHAR2(9),
+	MGR NUMBER(4),
+	HIREDATE DATE,
+	SAL NUMBER(7,2),
+	COMM  NUMBER (7,2),
+	DEPTNO NUMBER (2) REFERENCES dept_FK(DEPTNO) ON DELETE SET NULL
+);
+
+
+INSERT INTO DEPT_FK (deptno, dname, loc)
+VALUES(10,'DATABASE','SEOUL');
+
+INSERT INTO EMP_FK (empno, ename, job, mgr, hiredate, sal, comm, deptno)
+VALUES(7201, 'TEST1','MANAGER',7788,TO_DATE('2026-01-02','yyyy-mm-dd'), 4500, NULL, 10);
+
+DELETE FROM DEPT_FK WHERE DEPTNO =10;
+
+
+SELECT * FROM EMP_FK ef ;
+
+-- ORA-02449: unique/primary keys in table referenced by foreign keys
+DROP TABLE DEPT_FK ;
+
+
+
+
+-- 외래키 제약조건
+-- insert시 부모부터 데이터 삽입
+-- 삭제시 자식부터 삭제
+
+-- 참조하는 테이블의 열은 UNIQUE 혹은 기본키여야함.
+-- DEPT_TMP 기본키 추가
+ALTER TABLE dept_tmp ADD PRIMARY KEY (deptno);
+
+ALTER TABLE emp_TMP ADD FOREIGN KEY (deptno ) REFERENCES DEPT_TMP(deptno);
+
+
+SELECT * FROM dept_tmp;
+
+
+-- check
+-- 개발자가 정한 조건식을 만족해야 한다. (ex, 급여는 100보다 커야한다.)
+
+-- 비밀번호가 8자리 이상
+
+CREATE TABLE TABLE_CHECK(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) CHECK (LENGTH(LOGIN_PWD ) >= 8),
+	TEL VARCHAR2(20)
+);
+
+
+--  ORA-02290: check constraint (SCOTT.SYS_C009312) violated
+INSERT INTO table_check (login_id, login_pwd, tel)
+VALUES ('test01','test01','010-1234-5678');
+
+
+
+-- 성별 CHECK
+CREATE TABLE TABLE_CHECK2(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) CHECK (LENGTH(LOGIN_PWD ) >= 8),
+	GENDER VARCHAR2(10) CHECK (gender IN ('M','F')),
+	TEL VARCHAR2(20)
+);
+
+-- DEFAULT : 기본값 설정 
+-- 
+
+CREATE TABLE TABLE_DEFAULT(
+	LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+	LOGIN_PWD VARCHAR2(20) DEFAULT '1234',
+	GENDER VARCHAR2(10),
+	TEL VARCHAR2(20)
+);
+
+INSERT INTO table_DEFAULT (login_id, tel)
+VALUES ('test01','010-1234-5678');
+
+
+-- DEFAULT는 NULL값을 명시하는 경우에는 적용되지 않음.
+INSERT INTO table_DEFAULT (login_id,login_pwd, tel)
+VALUES ('test02',null,'010-1234-5678');
+
+
+
+-- 오라클 12C 버전부터
+-- GENERATED BY DEFAULT AS IDENTITY : 1씩 증가
+CREATE TABLE CATEGORY (
+	CATEGORY_ID NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+	CATEGORY_NAME VARCHAR2(50) NOT NULL
+	);
+
+INSERT INTO category(category_name) values('시사');
+INSERT INTO category(category_name) values('경제');
+
+SELECT * FROM category;
