@@ -1,89 +1,100 @@
 
-CREATE TABLE author
+CREATE TABLE manufacture
 (
-  author_id   NUMBER(10)   NOT NULL,
-  author_name VARCHAR2(50) NOT NULL,
-  CONSTRAINT PK_author PRIMARY KEY (author_id)
+  manu_name         VARCHAR2(50)  NOT NULL,
+  manu_phone_number VARCHAR2(20)  NOT NULL,
+  manu_addr         VARCHAR2(100) NOT NULL,
+  manager           varchar2(30) ,
+  CONSTRAINT PK_manufacture PRIMARY KEY (manu_name)
 );
 
-CREATE TABLE Book
+CREATE TABLE mart_member
 (
-  book_id     NUMBER(10)    NOT NULL,
-  title       VARCHAR2(200) NOT NULL,
-  price       NUMBER(8)     NOT NULL,
-  stock_qty   NUMBER(10)    DEFAULT 0 NOT NULL,
-  category_id NUMBER(10)    NOT NULL,
-  CONSTRAINT PK_Book PRIMARY KEY (book_id)
-);
-
-CREATE TABLE book_author
-(
-  author_id NUMBER(10) NOT NULL,
-  book_id   NUMBER(10) NOT NULL,
-  CONSTRAINT PK_book_author PRIMARY KEY (author_id, book_id)
-);
-
-CREATE TABLE Category
-(
-  category_id   NUMBER(10)   NOT NULL,
-  category_name VARCHAR2(50) NOT NULL,
-  CONSTRAINT PK_Category PRIMARY KEY (category_id)
-);
-
-CREATE TABLE Member
-(
-  member_id NUMBER(10)    NOT NULL,
-  name      VARCHAR2(50)  NOT NULL,
-  email     VARCHAR2(100) NOT NULL,
-  phone     varchar2(20) ,
-  joined_at DATE          NOT NULL,
-  CONSTRAINT PK_Member PRIMARY KEY (member_id)
+  member_id VARCHAR2(20) NOT NULL,
+  password  VARCHAR2(20) NOT NULL,
+  name      VARCHAR2(20) NOT NULL,
+  age       number(2)    NOT NULL,
+  rank      VARCHAR2(10) NOT NULL,
+  savings   number(10)   NOT NULL,
+  CONSTRAINT PK_mart_member PRIMARY KEY (member_id)
 );
 
 CREATE TABLE order_detail
 (
-  order_id   NUMBER(10) NOT NULL,
-  book_id    NUMBER(10) NOT NULL,
-  quantity   NUMBER(10) NOT NULL,
-  sale_price NUMBER     NOT NULL,
-  CONSTRAINT PK_order_detail PRIMARY KEY (order_id, book_id)
+  order_detail_id number(10) NOT NULL,
+  quantity        number(10) NOT NULL,
+  order_id        NUMBER(10) NOT NULL,
+  product_id      NUMBER(10) NOT NULL,
+  CONSTRAINT PK_order_detail PRIMARY KEY (order_detail_id)
 );
 
-CREATE TABLE Orders
+CREATE TABLE orders
 (
-  order_id   NUMBER(10)   NOT NULL,
-  status     VARCHAR2(20) NOT NULL,
-  order_date DATE         NOT NULL,
-  member_id  NUMBER(10)   NOT NULL,
-  CONSTRAINT PK_Orders PRIMARY KEY (order_id)
+  order_id   NUMBER(10)    NOT NULL,
+  order_date DATE          NOT NULL,
+  menber_id  VARCHAR2(20)  NOT NULL,
+  address    VARCHAR2(100) NOT NULL,
+  CONSTRAINT PK_orders PRIMARY KEY (order_id)
 );
 
-ALTER TABLE Orders
-  ADD CONSTRAINT FK_Member_TO_Orders
-    FOREIGN KEY (member_id)
-    REFERENCES Member (member_id);
+CREATE TABLE post
+(
+  post_id      number(10)     NOT NULL,
+  post_title   VARCHAR2(100)  NOT NULL,
+  post_content VARCHAR2(4000) NOT NULL,
+  post_date    DATE           NOT NULL,
+  menber_id    VARCHAR2(20)   NOT NULL,
+  CONSTRAINT PK_post PRIMARY KEY (post_id)
+);
 
-ALTER TABLE Book
-  ADD CONSTRAINT FK_Category_TO_Book
-    FOREIGN KEY (category_id)
-    REFERENCES Category (category_id);
+CREATE TABLE product
+(
+  product_id     NUMBER(10)   NOT NULL,
+  product_name   VARCHAR2(50) NOT NULL,
+  price          number(10)   NOT NULL,
+  stock_quantity NUMBER(10)   NOT NULL,
+  manu_name      VARCHAR2(50) NOT NULL,
+  CONSTRAINT PK_product PRIMARY KEY (product_id)
+);
+
+CREATE TABLE supply
+(
+  supply_id       number(10)   NOT NULL,
+  supply_date     VARCHAR2(20) NOT NULL,
+  supply_quantity number(10)   NOT NULL,
+  product_id      NUMBER(10)   NOT NULL,
+  CONSTRAINT PK_supply PRIMARY KEY (supply_id)
+);
+
+ALTER TABLE orders
+  ADD CONSTRAINT FK_mart_member_TO_orders
+    FOREIGN KEY (menber_id)
+    REFERENCES mart_member (member_id);
 
 ALTER TABLE order_detail
-  ADD CONSTRAINT FK_Orders_TO_order_detail
+  ADD CONSTRAINT FK_orders_TO_order_detail
     FOREIGN KEY (order_id)
-    REFERENCES Orders (order_id);
+    REFERENCES orders (order_id);
 
 ALTER TABLE order_detail
-  ADD CONSTRAINT FK_Book_TO_order_detail
-    FOREIGN KEY (book_id)
-    REFERENCES Book (book_id);
+  ADD CONSTRAINT FK_product_TO_order_detail
+    FOREIGN KEY (product_id)
+    REFERENCES product (product_id);
 
-ALTER TABLE book_author
-  ADD CONSTRAINT FK_author_TO_book_author
-    FOREIGN KEY (author_id)
-    REFERENCES author (author_id);
+ALTER TABLE post
+  ADD CONSTRAINT FK_mart_member_TO_post
+    FOREIGN KEY (menber_id)
+    REFERENCES mart_member (member_id);
 
-ALTER TABLE book_author
-  ADD CONSTRAINT FK_Book_TO_book_author
-    FOREIGN KEY (book_id)
-    REFERENCES Book (book_id);
+ALTER TABLE supply
+  ADD CONSTRAINT FK_product_TO_supply
+    FOREIGN KEY (product_id)
+    REFERENCES product (product_id);
+
+ALTER TABLE product
+  ADD CONSTRAINT FK_manufacture_TO_product
+    FOREIGN KEY (manu_name)
+    REFERENCES manufacture (manu_name);
+
+
+

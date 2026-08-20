@@ -2,3 +2,7 @@
 .AppleDouble
 .LSOverrideIcon?
 ._*
+
+# 비밀번호 등 로컬 환경변수
+.env
+.venv
